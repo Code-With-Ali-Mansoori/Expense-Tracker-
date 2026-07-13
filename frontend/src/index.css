@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-mockup-bg text-mockup-textGray font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+    @apply text-mockup-textDark;
+  }
+}
+
+/* Redefining glass-card as a premium light-theme card for backward compatibility */
+.glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(30, 27, 75, 0.04);
+  box-shadow: 0 8px 30px rgba(30, 27, 75, 0.03);
+}
+
+/* Custom scrollbar for desktop dashboards and chats */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.3);
+}
+
+/* Smooth active tab animations */
+.active-nav-tab {
+  position: relative;
+}
+
+.active-nav-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 25%;
+  right: 25%;
+  height: 3px;
+  background: #7c3aed;
+  border-radius: 9999px;
+}
+
+/* Utility Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Custom form styling input focus ring */
+input:focus, select:focus, textarea:focus {
+  @apply border-mockup-purple ring-2 ring-mockup-purple/10 !important;
+}
