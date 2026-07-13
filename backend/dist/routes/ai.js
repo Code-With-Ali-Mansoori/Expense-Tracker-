@@ -94,6 +94,19 @@ router.post('/chat', auth_1.verifyToken, async (req, res) => {
             category: exp.category,
             date: exp.date.toISOString().split('T')[0],
         }));
+        const normalizedMessage = message.toLowerCase();
+        const financeKeywords = ['expense', 'expenses', 'spending', 'budget', 'income', 'salary', 'saving', 'savings', 'debt', 'loan', 'finance', 'money', 'cash flow', 'transaction', 'transactions', 'bill', 'bills', 'goal', 'cost', 'costs', 'category', 'monthly', 'shop', 'shopping'];
+        const isFinanceRelated = financeKeywords.some((keyword) => normalizedMessage.includes(keyword));
+        if (!isFinanceRelated) {
+            const apologyReply = 'Sorry, I can only help with questions about your personal finances, spending, budget, income, or savings using your own expense data.';
+            const assistantMessage = new ChatMessage_1.ChatMessage({
+                userId: req.userId,
+                role: 'assistant',
+                content: apologyReply,
+            });
+            await assistantMessage.save();
+            return res.status(200).json({ reply: apologyReply });
+        }
         // 4. Construct system prompt
         const systemPrompt = `You are a personal finance advisor inside an expense tracking app.
 
@@ -108,76 +121,59 @@ Rules:
 - Only answer using the data above. Never invent numbers.
 - If goal is "savings", emphasize savings rate and overspending alerts.
 - If goal is "habits", focus on patterns and behavioral insights.
-- If asked something unrelated to personal finance, politely redirect.
+- If asked something unrelated to personal finance, politely say you can only help with questions about their spending, budget, income, savings, or expense history.
 - Keep responses concise (2-4 sentences) unless asked for more detail.
 - Use bullet points if listing multiple insights.
 - If the user has no transactions yet, encourage them to add their first expense and explain what insights you'll give once they do.
 - Use ₹ for currency, be specific with real numbers from their data.`;
         let reply = '';
-        // 5. Call external API (Anthropic or Gemini) depending on set key
-        const anthropicKey = process.env.ANTHROPIC_API_KEY;
-        const geminiKey = process.env.GEMINI_API_KEY;
-        if (anthropicKey) {
-            try {
-                // Prepare Claude messages array
-                const claudeMessages = last10Messages.map((msg) => ({
-                    role: msg.role === 'assistant' ? 'assistant' : 'user',
-                    content: msg.content,
-                }));
-                const response = await axios_1.default.post('https://api.anthropic.com/v1/messages', {
-                    model: 'claude-3-5-sonnet-20241022',
-                    max_tokens: 300,
-                    system: systemPrompt,
-                    messages: claudeMessages,
-                }, {
-                    headers: {
-                        'x-api-key': anthropicKey,
-                        'anthropic-version': '2023-06-01',
-                        'content-type': 'application/json',
-                    },
-                });
-                reply = response.data.content[0].text;
-            }
-            catch (err) {
-                console.error('Anthropic API error:', err?.response?.data || err.message);
-                // Fall back to Gemini if available, otherwise mock
-                if (!geminiKey) {
-                    reply = getMockAdvice(user.monthlyIncome, user.purpose, totalSpentThisMonth, totalSpentLastMonth, spendingByCategory);
-                }
-            }
+        // Read API key from the environment file and validate it before the Gemini API call.
+        const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        if (!geminiKey) {
+            console.error('Gemini API key is missing. Set GEMINI_API_KEY or GOOGLE_API_KEY in the environment.');
+            reply = getMockAdvice(user.monthlyIncome, user.purpose, totalSpentThisMonth, totalSpentLastMonth, spendingByCategory);
         }
-        // Try Gemini if Anthropic wasn't available or failed
-        if (!reply && geminiKey) {
+        else {
             try {
-                // Map history to Gemini's format: roles are user/model
+                // Gemini API call is made here to generate the finance response.
                 const geminiContents = last10Messages.map((msg) => ({
                     role: msg.role === 'assistant' ? 'model' : 'user',
                     parts: [{ text: msg.content }],
                 }));
-                const response = await axios_1.default.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+                const response = await axios_1.default.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
                     contents: geminiContents,
                     systemInstruction: {
                         parts: [{ text: systemPrompt }],
                     },
                     generationConfig: {
+                        temperature: 0.2,
                         maxOutputTokens: 300,
                     },
+                }, {
+                    timeout: 20000,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                 });
-                if (response.data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    reply = response.data.candidates[0].content.parts[0].text;
+                const candidateText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (candidateText) {
+                    reply = candidateText;
                 }
                 else {
                     throw new Error('Gemini response format invalid');
                 }
             }
             catch (err) {
-                console.error('Gemini API error:', err?.response?.data || err.message);
-                reply = getMockAdvice(user.monthlyIncome, user.purpose, totalSpentThisMonth, totalSpentLastMonth, spendingByCategory);
+                // Handle Gemini rate-limit and other API errors here without exposing the full stack trace.
+                if (err?.response?.status === 429) {
+                    console.error('Gemini API quota exceeded. Please check the API plan or try again later.');
+                    reply = 'AI service is temporarily unavailable because the Gemini quota has been exceeded. Please try again later.';
+                }
+                else {
+                    console.error('Gemini API error:', err?.response?.data?.error?.message || err.message);
+                    reply = getMockAdvice(user.monthlyIncome, user.purpose, totalSpentThisMonth, totalSpentLastMonth, spendingByCategory);
+                }
             }
-        }
-        // Default mock advice fallback if no API keys are active/correct
-        if (!reply) {
-            reply = getMockAdvice(user.monthlyIncome, user.purpose, totalSpentThisMonth, totalSpentLastMonth, spendingByCategory);
         }
         // 7. Save the AI's reply to ChatMessage
         const assistantMessage = new ChatMessage_1.ChatMessage({

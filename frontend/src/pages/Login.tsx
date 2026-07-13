@@ -52,7 +52,7 @@ export const Login: React.FC = () => {
           <div className="p-3.5 bg-gradient-to-tr from-mockup-purple to-indigo-500 rounded-3xl text-white mb-3">
             <Wallet className="w-7 h-7 stroke-[2.2]" />
           </div>
-          <h2 className="text-3xl font-bold text-mockup-textDark tracking-tight font-heading">FinTrace</h2>
+          <h2 className="text-3xl font-bold text-mockup-textDark tracking-tight font-heading">Expense Tracker</h2>
           <p className="text-[10px] text-mockup-textLight mt-1 uppercase tracking-widest font-semibold">MERN Expense Tracker</p>
         </div>
 

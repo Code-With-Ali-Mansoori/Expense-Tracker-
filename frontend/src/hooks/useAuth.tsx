@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  demoLogin: () => Promise<void>;
   logout: () => void;
   updatePreferences: (monthlyIncome: number, purpose: GoalPurpose) => Promise<void>;
 }
@@ -68,6 +69,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const demoLogin = async () => {
+    setLoading(true);
+    try {
+      const res = await api.post('/auth/login', {
+        email: 'demo@expensetracker.app',
+        password: 'demo12345',
+      });
+      localStorage.setItem('expense_tracker_token', res.data.token);
+      setUser(res.data.user);
+    } catch (err: any) {
+      throw new Error(err.response?.data?.error || 'Demo login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('expense_tracker_token');
     setUser(null);
@@ -88,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: !!user,
     login,
     register,
+    demoLogin,
     logout,
     updatePreferences,
   };

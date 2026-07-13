@@ -21,7 +21,7 @@ export const Sidebar: React.FC = () => {
 
     logout();
     toast.success('Logged out successfully.');
-    navigate('/login');
+    navigate('/demo');
   };
 
 
@@ -34,7 +34,7 @@ export const Sidebar: React.FC = () => {
           <Wallet size={20} className="stroke-[2.5]" />
         </div>
         <div>
-          <h1 className="font-bold text-lg text-mockup-textDark tracking-tight leading-none">FinTrace</h1>
+          <h1 className="font-bold text-lg text-mockup-textDark tracking-tight leading-none">Expense Tracker</h1>
           <span className="text-[10px] text-mockup-textLight uppercase tracking-wider font-semibold">Expense Tracker</span>
         </div>
       </div>

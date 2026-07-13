@@ -50,7 +50,7 @@ export const Profile: React.FC = () => {
 
     logout();
     toast.success('Logged out successfully.');
-    navigate('/login');
+    navigate('/demo');
   };
 
   const handleMenuClick = () => {

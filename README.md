@@ -1,6 +1,6 @@
-# FinTrace - Full-Stack Expense Tracker App
+# Expense Tracker - Full-Stack Expense Tracker App
 
-FinTrace is a personal finance tracker and expense analyzer built with a MERN stack (MongoDB, Express, React, Node.js) and TypeScript. It includes a dashboard for analytics, an AI Advisor bot integrated server-side with Gemini and Claude APIs, and a mobile-responsive interface.
+Expense Tracker is a personal finance tracker and expense analyzer built with a MERN stack (MongoDB, Express, React, Node.js) and TypeScript. It includes a dashboard for analytics, an AI Advisor bot integrated server-side with Gemini and Claude APIs, and a mobile-responsive interface.
 
 ---
 

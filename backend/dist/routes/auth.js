@@ -19,6 +19,22 @@ const loginSchema = zod_1.z.object({
     password: zod_1.z.string().min(1, 'Password is required'),
 });
 const getJWTSecret = () => process.env.JWT_SECRET || 'fallback_secret';
+const DEMO_EMAIL = 'demo@fintrace.app';
+const DEMO_NAME = 'Demo User';
+const createDemoUser = async (password) => {
+    const salt = await bcryptjs_1.default.genSalt(10);
+    const hashedPassword = await bcryptjs_1.default.hash(password, salt);
+    const demoUser = new User_1.User({
+        name: DEMO_NAME,
+        email: DEMO_EMAIL,
+        password: hashedPassword,
+        monthlyIncome: 50000,
+        purpose: 'savings',
+    });
+    await demoUser.save();
+    return demoUser;
+};
+const isDemoCredentials = (email, password) => email === DEMO_EMAIL && password === 'demo12345';
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
     try {
@@ -27,6 +43,20 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: parseResult.error.errors[0].message });
         }
         const { name, email, password } = parseResult.data;
+        if (isDemoCredentials(email, password)) {
+            const demoUser = await User_1.User.findOne({ email: DEMO_EMAIL }) || (await createDemoUser(password));
+            const token = jsonwebtoken_1.default.sign({ userId: demoUser._id }, getJWTSecret(), { expiresIn: '7d' });
+            return res.status(201).json({
+                token,
+                user: {
+                    id: demoUser._id,
+                    name: demoUser.name,
+                    email: demoUser.email,
+                    monthlyIncome: demoUser.monthlyIncome,
+                    purpose: demoUser.purpose,
+                },
+            });
+        }
         // Check if user already exists
         const existingUser = await User_1.User.findOne({ email });
         if (existingUser) {
@@ -70,6 +100,20 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: parseResult.error.errors[0].message });
         }
         const { email, password } = parseResult.data;
+        if (isDemoCredentials(email, password)) {
+            const demoUser = await User_1.User.findOne({ email: DEMO_EMAIL }) || (await createDemoUser(password));
+            const token = jsonwebtoken_1.default.sign({ userId: demoUser._id }, getJWTSecret(), { expiresIn: '7d' });
+            return res.status(200).json({
+                token,
+                user: {
+                    id: demoUser._id,
+                    name: demoUser.name,
+                    email: demoUser.email,
+                    monthlyIncome: demoUser.monthlyIncome,
+                    purpose: demoUser.purpose,
+                },
+            });
+        }
         // Find the user
         const user = await User_1.User.findOne({ email });
         if (!user) {

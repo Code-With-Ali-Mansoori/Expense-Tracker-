@@ -8,8 +8,6 @@ import { queryClient } from './lib/queryClient';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 
 // Pages
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Onboarding } from './pages/Onboarding';
 import { Home } from './pages/Home';
 import { Dashboard } from './pages/Dashboard';
@@ -35,7 +33,7 @@ const ProtectedRoute: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/welcome" replace />;
+    return <Navigate to="/demo" replace />;
   }
 
   return <Outlet />;
@@ -77,12 +75,10 @@ export const App: React.FC = () => {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Welcome Screen */}
-            <Route path="/welcome" element={<Welcome />} />
-            
-            {/* Public Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* Public demo entry screen */}
+            <Route path="/demo" element={<Welcome />} />
+            <Route path="/login" element={<Navigate to="/demo" replace />} />
+            <Route path="/register" element={<Navigate to="/demo" replace />} />
 
             {/* Protected Onboarding Route (Forces onboarding if income is not set) */}
             <Route element={<ProtectedRoute />}>

@@ -18,6 +18,26 @@ const loginSchema = z.object({
 });
 
 const getJWTSecret = () => process.env.JWT_SECRET || 'fallback_secret';
+const DEMO_EMAIL = 'demo@expensetracker.app';
+const DEMO_NAME = 'Demo User';
+
+const createDemoUser = async (password: string) => {
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  const demoUser = new User({
+    name: DEMO_NAME,
+    email: DEMO_EMAIL,
+    password: hashedPassword,
+    monthlyIncome: 50000,
+    purpose: 'savings',
+  });
+
+  await demoUser.save();
+  return demoUser;
+};
+
+const isDemoCredentials = (email: string, password: string) => email === DEMO_EMAIL && password === 'demo12345';
 
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response) => {
@@ -28,6 +48,22 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     const { name, email, password } = parseResult.data;
+
+    if (isDemoCredentials(email, password)) {
+      const demoUser = await User.findOne({ email: DEMO_EMAIL }) || (await createDemoUser(password));
+      const token = jwt.sign({ userId: demoUser._id }, getJWTSecret(), { expiresIn: '7d' });
+
+      return res.status(201).json({
+        token,
+        user: {
+          id: demoUser._id,
+          name: demoUser.name,
+          email: demoUser.email,
+          monthlyIncome: demoUser.monthlyIncome,
+          purpose: demoUser.purpose,
+        },
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -78,6 +114,22 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     const { email, password } = parseResult.data;
+
+    if (isDemoCredentials(email, password)) {
+      const demoUser = await User.findOne({ email: DEMO_EMAIL }) || (await createDemoUser(password));
+      const token = jwt.sign({ userId: demoUser._id }, getJWTSecret(), { expiresIn: '7d' });
+
+      return res.status(200).json({
+        token,
+        user: {
+          id: demoUser._id,
+          name: demoUser.name,
+          email: demoUser.email,
+          monthlyIncome: demoUser.monthlyIncome,
+          purpose: demoUser.purpose,
+        },
+      });
+    }
 
     // Find the user
     const user = await User.findOne({ email });
